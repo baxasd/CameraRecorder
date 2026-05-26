@@ -1,39 +1,59 @@
-# Headless Camera Recorder
+# Camera Recorder
 
-A lightweight, headless CLI tool for capturing 3D human pose estimation using an Intel RealSense camera and MediaPipe. 
 
-![Python](https://img.shields.io/badge/python-3.11-green)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/) 
+[![Intel RealSense](https://img.shields.io/badge/PyRealsense-2.58+-0071C5.svg?style=flat&logo=intel&logoColor=white)](https://github.com/IntelRealSense/librealsense)
+[![MediaPipe](https://img.shields.io/badge/Mediapipe-0.10.21-00C0FF.svg?style=flat&logo=google&logoColor=white)](https://mediapipe.dev/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blueviolet.svg?style=flat)](LICENSE)
 
----
+A headless CLI tool for 3D human pose estimation and recording using an Intel RealSense depth camera and MediaPipe. 
 
-## 🏛️ Architecture
+## Architecture
 
-The project has been aggressively stripped down to focus exclusively on headless camera capture:
+The system is designed for minimal overhead and consists of core modules and a main application node:
 
-```
-core/
-├── camera.py  (Intel RealSense driver & frame alignment)
-├── pose.py    (MediaPipe Pose Estimator & 2D inference)
-├── depth.py   (3D deprojection math)
-└── config.py  (Settings generation & loading)
-app.py         (Minimal CLI menu)
-```
+- **`core/camera.py`**: Manages Intel RealSense pipeline, alignment, and hardware filters.
+- **`core/pose.py`**: Handles MediaPipe Pose estimation and 2D coordinate extraction.
+- **`core/depth.py`**: Performs 3D deprojection math for pixel-to-point translation.
+- **`core/config.py`**: Auto-generates and manages `settings.ini`.
+- **`app.py`**: CLI interface and high-speed binary serialization.
 
----
+## Binary File Structure
 
-## 🚀 Quick Start
+Records are saved in a compact `.bin` format optimized for throughput:
 
-1. Connect your Intel RealSense camera.
-2. Run the application:
+1. **Header**: 
+   - `4 bytes (uint)`: Length of metadata JSON.
+   - `N bytes`: Metadata string (UTF-8 JSON).
+2. **Frame Block** (Repeated):
+   - `8 bytes (double)`: Unix Timestamp.
+   - `4 bytes (uint)`: Number of detected joints ($J$).
+   - **Joint Data** ($J$ entries):
+     - `4 bytes (uint)`: Joint ID.
+     - `12 bytes (3x float)`: 3D coordinates ($x, y, z$).
+     - `8 bytes (2x int)`: 2D pixel coordinates ($px, py$).
+
+## Installation & Usage
+
+### Setup
+1. **Install dependencies**:
    ```bash
-   python app.py
+   pip install -r requirements.txt
    ```
-3. A `settings.ini` file will be auto-generated if it does not exist. You can configure camera width, height, fps, and exposure here.
-4. Follow the minimal CLI menu to specify an output JSONL file and a duration (in seconds, 0 for infinite).
 
----
+### Execution
+Run the application to start the CLI menu:
+```bash
+python app.py
+```
+A `settings.ini` file will be generated on first run. Configure resolution, FPS, and filters there.
 
-## ⚙️ Supported Hardware
+To visually configure the camera, run
+```bash
+python calibration.py
+```
 
-**Intel RealSense (e.g. D435i)**
-RGB-Depth camera for precise skeletal kinematics and joint angle calculation.
+## Contribution & License
+
+- **License**: Distributed under the [Apache 2.0 License](LICENSE).
+- **Contributions**: Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change. PRs containing unreviewed, generated AI content will be closed.
