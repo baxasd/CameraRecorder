@@ -2,10 +2,10 @@
 
 import sys
 import os
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, copy_metadata
 
 # This spec file is designed to be run from the PROJECT ROOT.
-# Example: pyinstaller --clean tools/build.spec
+# Example: pyinstaller --clean tools/windows/build.spec
 project_root = os.path.abspath(os.getcwd())
 
 # Add project root to sys.path so PyInstaller can find the 'core' package
@@ -17,17 +17,17 @@ block_cipher = None
 # Pre-collect mediapipe dependencies
 try:
     datas_mp, binaries_mp, hiddenimports_mp = collect_all('mediapipe')
+    datas_mp += copy_metadata("mediapipe")
 except Exception as e:
     print(f"Warning: Failed to collect mediapipe via collect_all: {e}")
     datas_mp, binaries_mp, hiddenimports_mp = [], [], []
 
 # Common Analysis parameters
-# Updated paths to reflect the 'tools' directory
 runtime_hooks = [os.path.join(project_root, 'tools', 'hook.py')]
-manifest_path = os.path.join(project_root, 'tools', 'manifest.xml')
-icon_path = os.path.join(project_root, 'tools', 'app.ico')
+manifest_path = os.path.join(project_root, 'tools', 'windows', 'manifest.xml')
+icon_path = os.path.join(project_root, 'tools', 'vision.ico')
 
-# Analysis for the console application: app.py
+# Analysis for the console application: recorder.py
 a = Analysis(
     [os.path.join(project_root, 'recorder.py')],
     pathex=[project_root],
@@ -82,7 +82,7 @@ pyz_a = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 pyz_b = PYZ(b.pure, b.zipped_data, cipher=block_cipher)
 pyz_c = PYZ(c.pure, c.zipped_data, cipher=block_cipher)
 
-# EXE for app.py (Console)
+# EXE for recorder.py (Console)
 exe_a = EXE(
     pyz_a,
     a.scripts,
@@ -165,5 +165,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='CratonVision',
+    name='Vision',
 )

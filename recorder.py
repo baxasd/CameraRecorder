@@ -8,7 +8,7 @@ from pathlib import Path
 from core.camera import RealSenseCamera
 from core.pose import PoseEstimator
 from core.depth import get_mean_depth, deproject_pixel_to_point
-from core.config import ensure_config, SETTINGS_PATH
+from core.config import ensure_config, SETTINGS_PATH, get_base_path
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,6 +21,19 @@ def run_capture(output_file, duration):
     # Load settings from settings.ini
     config = configparser.ConfigParser()
     config.read(SETTINGS_PATH)
+    
+    # Resolve output directory
+    raw_output_dir = config.get('General', 'output_dir', fallback='recordings')
+    output_dir = Path(raw_output_dir)
+    
+    # If path is relative, make it relative to the application base path
+    if not output_dir.is_absolute():
+        output_dir = get_base_path() / output_dir
+        
+    # Ensure directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    output_path = output_dir / output_file
     
     width = config.getint('Camera', 'width', fallback=640)
     height = config.getint('Camera', 'height', fallback=480)
@@ -81,10 +94,9 @@ def run_capture(output_file, duration):
 
     pose_estimator = PoseEstimator(model_complexity=mp_complex, min_conf=mp_conf, target_size=mp_size)
 
-    log.info(f"Starting binary capture to {output_file}...")
+    log.info(f"Starting binary capture to {output_path}...")
     log.info("Press Ctrl+C to stop manually.")
     
-    output_path = Path(output_file)
     start_time = time.time()
     frame_count = 0
     
@@ -200,7 +212,16 @@ def main():
     ensure_config()
     
     while True:
+        # Resolve output directory for display
+        config = configparser.ConfigParser()
+        config.read(SETTINGS_PATH)
+        raw_output_dir = config.get('General', 'output_dir', fallback='recordings')
+        output_dir = Path(raw_output_dir)
+        if not output_dir.is_absolute():
+            output_dir = get_base_path() / output_dir
+
         print("\n--- Camera Recorder ---")
+        print(f"Target Directory: {output_dir}")
         print("1. Start Capture")
         print("2. Quit")
         

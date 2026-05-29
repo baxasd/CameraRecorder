@@ -1,24 +1,20 @@
 import sys
 import configparser
 from pathlib import Path
+import os
 
 def get_base_path():
-    """Returns the base path for the application."""
+    """Returns the base path for the application following Craton standards."""
     if getattr(sys, 'frozen', False):
-        # If the application is run as a bundle, return the directory of the executable
-        return Path(sys.executable).parent
-    # If the application is run as a script, return the current directory
-    return Path(__file__).parent.parent
+        root_base = sys._MEIPASS
+        libs_path = os.path.join(root_base, 'libs')
+        return Path(libs_path if os.path.exists(libs_path) else root_base)
+    else:
+        return Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def get_resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller."""
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = Path(sys._MEIPASS)
-    except Exception:
-        base_path = Path(".").absolute()
-
-    return base_path / relative_path
+    return get_base_path() / relative_path
 
 SETTINGS_PATH = get_base_path() / "settings.ini"
 
@@ -26,6 +22,11 @@ def ensure_config():
     """Generates a default settings.ini if it doesn't exist."""
     if not SETTINGS_PATH.exists():
         config = configparser.ConfigParser()
+        
+        # General settings
+        config['General'] = {
+            'output_dir': 'recordings'
+        }
         
         # Camera-specific settings
         config['Camera'] = {
